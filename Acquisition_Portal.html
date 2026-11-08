@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Acquisition Package Portal</title>
+  
+  <!-- Client-side libraries for PDF, ZIP, and FontAwesome icons -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <style>
+    :root {
+      --bg-main: #f4f6f9;
+      --bg-card: #ffffff;
+      --border-color: #cbd5e1;
+      --border-focus: #2563eb;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --primary: #1e40af;
+      --primary-hover: #1d4ed8;
+      --secondary: #475569;
+      --success: #15803d;
+      --accent: #0284c7;
+      --tab-bg: #e2e8f0;
+      --tab-active-bg: #ffffff;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      line-height: 1.5;
+      padding: 24px;
+    }
+
+    .app-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      min-height: 85vh;
+    }
+
+    /* Header & Control Bar */
+    .app-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #ffffff;
+      border-top-left-radius: 8px;
+      border-top-right-radius: 8px;
+    }
+
+    .app-title h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .app-title p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .action-toolbar {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary { background-color: var(--primary); color: #fff; }
+    .btn-primary:hover { background-color: var(--primary-hover); }
+
+    .btn-secondary { background-color: #ffffff; color: var(--secondary); border-color: var(--border-color); }
+    .btn-secondary:hover { background-color: #f1f5f9; color: var(--text-main); }
+
+    .btn-success { background-color: var(--success); color: #fff; }
+    .btn-success:hover { background-color: #166534; }
+
+    .btn-outline { background-color: transparent; color: var(--primary); border-color: var(--primary); }
+    .btn-outline:hover { background-color: #eff6ff; }
+
+    /* Tabs Navigation */
+    .tabs-nav {
+      display: flex;
+      background-color: var(--tab-bg);
+      border-bottom: 1px solid var(--border-color);
+      overflow-x: auto;
+      scroll-behavior: smooth;
+    }
+
+    .tab-button {
+      padding: 14px 22px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      border-right: 1px solid var(--border-color);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s, color 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tab-button:hover {
+      background-color: #cbd5e1;
+      color: var(--text-main);
+    }
+
+    .tab-button.active {
+      background-color: var(--tab-active-bg);
+      color: var(--primary);
+      border-bottom: 3px solid var(--primary);
+      margin-bottom: -1px;
+    }
+
+    /* Form Content Body */
+    .tab-content-container {
+      padding: 28px;
+      flex-grow: 1;
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .panel-header {
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e2e8f0;
+    }
+
+    .panel-header h2 {
+      font-size: 1.25rem;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+
+    .panel-header p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Form Layout Grid */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 16px;
+    }
+
+    .col-12 { grid-column: span 12; }
+    .col-8  { grid-column: span 8; }
+    .col-6  { grid-column: span 6; }
+    .col-4  { grid-column: span 4; }
+    .col-3  { grid-column: span 3; }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .form-control {
+      padding: 9px 12px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      background-color: #ffffff;
+      color: var(--text-main);
+      transition: border-color 0.2s;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    textarea.form-control {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    /* File Import Input (Hidden) */
+    #jsonFileInput {
+      display: none;
+    }
+
+    /* Print / Export Staging Area (Hidden on screen) */
+    #pdfPrintStage {
+      display: none;
+    }
+
+    /* PDF Printable Styles */
+    .pdf-document {
+      font-family: Arial, sans-serif;
+      padding: 30px;
+      color: #000;
+      background: #fff;
+    }
+    .pdf-header {
+      border-bottom: 2px solid #1e40af;
+      padding-bottom: 12px;
+      margin-bottom: 20px;
+    }
+    .pdf-header h1 {
+      font-size: 18pt;
+      color: #1e40af;
+    }
+    .pdf-header h2 {
+      font-size: 14pt;
+      color: #475569;
+    }
+    .pdf-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    .pdf-table th, .pdf-table td {
+      border: 1px solid #cbd5e1;
+      padding: 8px 12px;
+      font-size: 10pt;
+      text-align: left;
+    }
+    .pdf-table th {
+      background-color: #f1f5f9;
+      font-weight: bold;
+    }
+    .pdf-field-label {
+      font-weight: bold;
+      color: #334155;
+      width: 30%;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Main Header & Action Toolbar -->
+    <header class="app-header">
+      <div class="app-title">
+        <h1>Acquisition Package Workstation</h1>
+        <p>Document Generator & Document Management System</p>
+      </div>
+      <div class="action-toolbar">
+        <input type="file" id="jsonFileInput" accept=".json" onchange="importJSON(event)">
+        <button class="btn btn-secondary" onclick="document.getElementById('jsonFileInput').click()">
+          <i class="fa-solid fa-file-import"></i> Import JSON
+        </button>
+        <button class="btn btn-secondary" onclick="exportJSON()">
+          <i class="fa-solid fa-file-export"></i> Export JSON
+        </button>
+        <button class="btn btn-outline" onclick="exportSinglePDF()">
+          <i class="fa-solid fa-file-pdf"></i> PDF Active Tab
+        </button>
+        <button class="btn btn-primary" onclick="exportCombinedPDF()">
+          <i class="fa-solid fa-layer-group"></i> PDF All Combined
+        </button>
+        <button class="btn btn-success" onclick="exportZipPackage()">
+          <i class="fa-solid fa-file-zipper"></i> Export ZIP Bundle
+        </button>
+      </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="tabs-nav" id="tabsNav">
+      <button class="tab-button active" onclick="switchTab('tab-logicole')">
+        <i class="fa-solid fa-database"></i> LogiCole
+      </button>
+      <button class="tab-button" onclick="switchTab('tab-scorecard')">
+        <i class="fa-solid fa-list-check"></i> Score Card
+      </button>
+      <button class="tab-button" onclick="switchTab('tab-quote')">
+        <i class="fa-solid fa-file-invoice-dollar"></i> Quote
+      </button>
+      <button class="tab-button" onclick="switchTab('tab-marketresearch')">
+        <i class="fa-solid fa-magnifying-glass-chart"></i> Market Research
+      </button>
+      <button class="tab-button" onclick="switchTab('tab-cba')">
+        <i class="fa-solid fa-scale-balanced"></i> CBA
+      </button>
+      <button class="tab-button" onclick="switchTab('tab-sow')">
+        <i class="fa-solid fa-file-contract"></i> SOW
+      </button>
+      <button class="tab-button" onclick="switchTab('tab-ja')">
+        <i class="fa-solid fa-shield-halved"></i> J&A
+      </button>
+    </nav>
+
+    <!-- Master Form Container -->
+    <form id="acquisitionForm" onsubmit="return false;">
+      <div class="tab-content-container">
+
+        <!-- TAB 1: LogiCole -->
+        <div id="tab-logicole" class="tab-panel active">
+          <div class="panel-header">
+            <h2>LogiCole Integration & Requisition Baseline</h2>
+            <p>Logistical item routing, stock numbers, baseline equipment info, and system request identifiers.</p>
+          </div>
+          <div class="form-grid">
+            <div class="form-group col-4">
+              <label for="lc_requisitionNum">Requisition / Control Number</label>
+              <input type="text" id="lc_requisitionNum" name="lc_requisitionNum" class="form-control" placeholder="e.g. LOG-2026-8841">
+            </div>
+            <div class="form-group col-4">
+              <label for="lc_nsn">National Stock Number (NSN) / Item ID</label>
+              <input type="text" id="lc_nsn" name="lc_nsn" class="form-control" placeholder="e.g. 6515-01-123-4567">
+            </div>
+            <div class="form-group col-4">
+              <label for="lc_facility">Requesting Facility / Location</label>
+              <input type="text" id="lc_facility" name="lc_facility" class="form-control" placeholder="e.g. WRNMMC Support Services">
+            </div>
+            <div class="form-group col-6">
+              <label for="lc_itemNomenclature">Item Nomenclature / Nomenclature Title</label>
+              <input type="text" id="lc_itemNomenclature" name="lc_itemNomenclature" class="form-control" placeholder="Item description or title">
+            </div>
+            <div class="form-group col-3">
+              <label for="lc_qty">Requested Quantity</label>
+              <input type="number" id="lc_qty" name="lc_qty" class="form-control" placeholder="1" min="1">
+            </div>
+            <div class="form-group col-3">
+              <label for="lc_unitIssue">Unit of Issue</label>
+              <select id="lc_unitIssue" name="lc_unitIssue" class="form-control">
+                <option value="EA">EA - Each</option>
+                <option value="KT">KT - Kit</option>
+                <option value="BX">BX - Box</option>
+                <option value="CS">CS - Case</option>
+                <option value="SE">SE - Set</option>
+              </select>
+            </div>
+            <div class="form-group col-12">
+              <label for="lc_notes">LogiCole System Notes & Justification Highlights</label>
+              <textarea id="lc_notes" name="lc_notes" class="form-control" placeholder="Enter relevant LogiCole cataloging notes..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: Score Card -->
+        <div id="tab-scorecard" class="tab-panel">
+          <div class="panel-header">
+            <h2>Technical & Vendor Score Card</h2>
+            <p>Evaluation criteria, scoring metrics, and compliance ratings.</p>
+          </div>
+          <div class="form-grid">
+            <div class="form-group col-6">
+              <label for="sc_evaluator">Evaluator Name / Title</label>
+              <input type="text" id="sc_evaluator" name="sc_evaluator" class="form-control">
+            </div>
+            <div class="form-group col-6">
+              <label for="sc_vendorName">Vendor Being Evaluated</label>
+              <input type="text" id="sc_vendorName" name="sc_vendorName" class="form-control">
+            </div>
+            <div class="form-group col-4">
+              <label for="sc_techScore">Technical Capability (1-100)</label>
+              <input type="number" id="sc_techScore" name="sc_techScore" class="form-control" min="0" max="100">
+            </div>
+            <div class="form-group col-4">
+              <label for="sc_pastPerfScore">Past Performance Score (1-100)</label>
+              <input type="number" id="sc_pastPerfScore" name="sc_pastPerfScore" class="form-control" min="0" max="100">
+            </div>
+            <div class="form-group col-4">
+              <label for="sc_priceRating">Price Compliance Rating</label>
+              <select id="sc_priceRating" name="sc_priceRating" class="form-control">
+                <option value="Acceptable">Acceptable / Fair & Reasonable</option>
+                <option value="Unreasonable">Unreasonable</option>
+                <option value="Exceeds Budget">Exceeds Budgetary Limit</option>
+              </select>
+            </div>
+            <div class="form-group col-12">
+              <label for="sc_summary">Evaluator Narrative Summary</label>
+              <textarea id="sc_summary" name="sc_summary" class="form-control" placeholder="Provide scoring rationale and vendor strengths/weaknesses..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: Quote -->
+        <div id="tab-quote" class="tab-panel">
+          <div class="panel-header">
+            <h2>Vendor Quotation Details</h2>
+            <p>Pricing schedule, line item totals, vendor quotes, and commercial terms.</p>
+          </div>
+          <div class="form-grid">
+            <div class="form-group col-4">
+              <label for="qt_quoteNum">Quote Reference Number</label>
+              <input type="text" id="qt_quoteNum" name="qt_quoteNum" class="form-control">
+            </div>
+            <div class="form-group col-4">
+              <label for="qt_cageCode">CAGE Code / SAM UEI</label>
+              <input type="text" id="qt_cageCode" name="qt_cageCode" class="form-control">
+            </div>
+            <div class="form-group col-4">
+              <label for="qt_expiration">Quote Expiration Date</label>
+              <input type="date" id="qt_expiration" name="qt_expiration" class="form-control">
+            </div>
+            <div class="form-group col-4">
+              <label for="qt_unitPrice">Unit Price ($)</label>
+              <input type="number" step="0.01" id="qt_unitPrice" name="qt_unitPrice" class="form-control" placeholder="0.00">
+            </div>
+            <div class="form-group col-4">
+              <label for="qt_totalPrice">Estimated Total Price ($)</label>
+              <input type="number" step="0.01" id="qt_totalPrice" name="qt_totalPrice" class="form-control" placeholder="0.00">
+            </div>
+            <div class="form-group col-4">
+              <label for="qt_paymentTerms">Payment / Delivery Terms</label>
+              <input type="text" id="qt_paymentTerms" name="qt_paymentTerms" class="form-control" placeholder="Net 30 / FOB Destination">
+            </div>
+            <div class="form-group col-12">
+              <label for="qt_lineItemDetails">Line Item Breakdown / Quotation Description</label>
+              <textarea id="qt_lineItemDetails" name="qt_lineItemDetails" class="form-control"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 4: Market Research -->
+        <div id="tab-marketresearch" class="tab-panel">
+          <div class="panel-header">
+            <h2>Market Research Report</h2>
+            <p>Industry analysis, commercial availability, socio-economic vendors, and sourcing options.</p>
+          </div>
+          <div class="form-grid">
+            <div class="form-group col-6">
+              <label for="mr_method">Research Method Used</label>
+              <select id="mr_method" name="mr_method" class="form-control">
+                <option value="GSA Schedules / eLibrary">GSA Schedules / eLibrary</option>
+                <option value="Sources Sought / RFI">Sources Sought / RFI Published</option>
+                <option value="Commercial Catalog Analysis">Commercial Catalog Analysis</option>
+                <option value="Historical Acquisition Review">Historical Acquisition Review</option>
+              </select>
+            </div>
+            <div class="form-group col-6">
+              <label for="mr_setAside">Recommended Set-Aside Status</label>
+              <select id="mr_setAside" name="mr_setAside" class="form-control">
+                <option value="Full and Open Competition">Full and Open Competition</option>
+                <option value="Small Business Set-Aside">Small Business Set-Aside</option>
+                <option value="SDVOSB Set-Aside">SDVOSB Set-Aside</option>
+                <option value="Sole Source">Sole Source</option>
+              </select>
+            </div>
+            <div class="form-group col-12">
+              <label for="mr_findings">Market Research Findings & Commercial Availability</label>
+              <textarea id="mr_findings" name="mr_findings" class="form-control" placeholder="Describe vendors contacted, market capability, and pricing trends..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 5: CBA -->
+        <div id="tab-cba" class="tab-panel">
+          <div class="panel-header">
+            <h2>Cost Benefit Analysis (CBA)</h2>
+            <p>Financial justification, return on investment (ROI), and alternative option comparisons.</p>
+          </div>
+          <div class="form-grid">
+            <div class="form-group col-6">
+              <label for="cba_optionA">Option A: Status Quo / Do Nothing (Cost)</label>
+              <input type="text" id="cba_optionA" name="cba_optionA" class="form-control" placeholder="$0 direct, high maintenance">
+            </div>
+            <div class="form-group col-6">
+              <label for="cba_optionB">Option B: Proposed Acquisition (Cost)</label>
+              <input type="text" id="cba_optionB" name="cba_optionB" class="form-control" placeholder="$ total initial investment">
+            </div>
+            <div class="form-group col-12">
+              <label for="cba_analysis">Cost Savings & Qualitative Benefit Rationale</label>
+              <textarea id="cba_analysis" name="cba_analysis" class="form-control" placeholder="Outline long-term operational savings, efficiency gains, and risk reduction..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 6: SOW -->
+        <div id="tab-sow" class="tab-panel">
+          <div class="panel-header">
+            <h2>Statement of Work (SOW)</h2>
+            <p>Scope, performance requirements, tasks, deliverables, and Period of Performance (POP).</p>
+          </div>
+          <div class="form-grid">
+            <div class="form-group col-6">
+              <label for="sow_title">Project / Requirement Title</label>
+              <input type="text" id="sow_title" name="sow_title" class="form-control">
+            </div>
+            <div class="form-group col-6">
+              <label for="sow_pop">Period of Performance (POP)</label>
+              <input type="text" id="sow_pop" name="sow_pop" class="form-control" placeholder="e.g. 12 Months from Date of Award">
+            </div>
+            <div class="form-group col-12">
+              <label for="sow_scope">Scope of Work</label>
+              <textarea id="sow_scope" name="sow_scope" class="form-control" placeholder="Define overall objective and scope..."></textarea>
+            </div>
+            <div class="form-group col-12">
+              <label for="sow_tasks">Specific Tasks & Deliverables</label>
+              <textarea id="sow_tasks" name="sow_tasks" class="form-control" placeholder="List itemized tasks, milestones, and deliverable schedules..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 7: J&A -->
+        <div id="tab-ja" class="tab-panel">
+          <div class="panel-header">
+            <h2>Justification & Approval (J&A)</h2>
+            <p>Statutory authority, sole-source justification, and urgency determination.</p>
+          </div>
+          <div class="form-grid">
+            <div class="form-group col-6">
+              <label for="ja_authority">Statutory Authority</label>
+              <select id="ja_authority" name="ja_authority" class="form-control">
+                <option value="FAR 6.302-1">FAR 6.302-1: Only One Responsible Source</option>
+                <option value="FAR 6.302-2">FAR 6.302-2: Unusual and Compelling Urgency</option>
+                <option value="FAR 13.106-1">FAR 13.106-1: Single Source SAP</option>
+                <option value="FAR 8.405-6">FAR 8.405-6: Limiting Sources (GSA)</option>
+              </select>
+            </div>
+            <div class="form-group col-6">
+              <label for="ja_contractor">Proposed Brand / Contractor</label>
+              <input type="text" id="ja_contractor" name="ja_contractor" class="form-control">
+            </div>
+            <div class="form-group col-12">
+              <label for="ja_justification">Unique Qualifications / Brand Name Rationale</label>
+              <textarea id="ja_justification" name="ja_justification" class="form-control" placeholder="Provide technical justification why no other product or service fulfills the requirement..."></textarea>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </form>
+  </div>
+
+  <!-- Off-screen staging container for PDF rendering -->
+  <div id="pdfPrintStage"></div>
+
+  <script>
+    // Tab Configurations
+    const tabsList = [
+      { id: 'tab-logicole', label: 'LogiCole' },
+      { id: 'tab-scorecard', label: 'Score Card' },
+      { id: 'tab-quote', label: 'Quote' },
+      { id: 'tab-marketresearch', label: 'Market Research' },
+      { id: 'tab-cba', label: 'CBA' },
+      { id: 'tab-sow', label: 'SOW' },
+      { id: 'tab-ja', label: 'J&A' }
+    ];
+
+    let activeTabId = 'tab-logicole';
+
+    // Switch active UI tab
+    function switchTab(tabId) {
+      activeTabId = tabId;
+      document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.remove('active');
+      });
+      document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('active');
+      });
+
+      document.getElementById(tabId).classList.add('active');
+      
+      const buttons = document.querySelectorAll('.tab-button');
+      const targetIndex = tabsList.findIndex(t => t.id === tabId);
+      if (buttons[targetIndex]) {
+        buttons[targetIndex].classList.add('active');
+      }
+    }
+
+    // JSON Export - Collects data from all form fields
+    function exportJSON() {
+      const form = document.getElementById('acquisitionForm');
+      const formData = new FormData(form);
+      const dataObj = {};
+      
+      formData.forEach((value, key) => {
+        dataObj[key] = value;
+      });
+
+      const jsonStr = JSON.stringify(dataObj, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      saveAs(blob, `Acquisition_Package_${getTimestamp()}.json`);
+    }
+
+    // JSON Import - Restores form fields from loaded JSON file
+    function importJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const dataObj = JSON.parse(e.target.result);
+          const form = document.getElementById('acquisitionForm');
+          
+          Object.keys(dataObj).forEach(key => {
+            const field = form.elements[key];
+            if (field) {
+              field.value = dataObj[key];
+            }
+          });
+          alert('Package library data loaded successfully.');
+        } catch (err) {
+          alert('Error parsing JSON file. Please ensure it is a valid package export.');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = ''; // Reset input
+    }
+
+    // Helper: Build clean HTML layout for a specific tab panel to export to PDF
+    function generateTabHTML(tabId) {
+      const tabInfo = tabsList.find(t => t.id === tabId);
+      const panel = document.getElementById(tabId);
+      const inputs = panel.querySelectorAll('input, select, textarea');
+      
+      let rowsHTML = '';
+      inputs.forEach(input => {
+        const labelEl = panel.querySelector(`label[for="${input.id}"]`);
+        const labelText = labelEl ? labelEl.innerText : input.name;
+        let val = input.value || 'N/A';
+        if (input.tagName === 'SELECT') {
+          val = input.options[input.selectedIndex]?.text || val;
+        }
+        
+        rowsHTML += `
+          <tr>
+            <td class="pdf-field-label">${escapeHtml(labelText)}</td>
+            <td>${escapeHtml(val).replace(/\n/g, '<br>')}</td>
+          </tr>
+        `;
+      });
+
+      return `
+        <div class="pdf-document">
+          <div class="pdf-header">
+            <h1>Acquisition Documentation Package</h1>
+            <h2>Section: ${tabInfo.label}</h2>
+          </div>
+          <table class="pdf-table">
+            <tbody>
+              ${rowsHTML}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    // PDF Active Tab Export
+    function exportSinglePDF() {
+      const tabInfo = tabsList.find(t => t.id === activeTabId);
+      const stage = document.getElementById('pdfPrintStage');
+      stage.innerHTML = generateTabHTML(activeTabId);
+      
+      const opt = {
+        margin:       [0.5, 0.5, 0.5, 0.5],
+        filename:     `${tabInfo.label.replace(/[^a-z0-9]/gi, '_')}_Document.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+
+      html2pdf().set(opt).from(stage.children[0]).save().then(() => {
+        stage.innerHTML = '';
+      });
+    }
+
+    // PDF All Combined Export
+    function exportCombinedPDF() {
+      const stage = document.getElementById('pdfPrintStage');
+      let combinedHTML = '';
+      
+      tabsList.forEach((tab, index) => {
+        const tabContent = generateTabHTML(tab.id);
+        const pageBreak = index < tabsList.length - 1 ? '<div style="page-break-after: always;"></div>' : '';
+        combinedHTML += tabContent + pageBreak;
+      });
+
+      stage.innerHTML = `<div>${combinedHTML}</div>`;
+
+      const opt = {
+        margin:       [0.5, 0.5, 0.5, 0.5],
+        filename:     `Complete_Acquisition_Package_${getTimestamp()}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+
+      html2pdf().set(opt).from(stage.children[0]).save().then(() => {
+        stage.innerHTML = '';
+      });
+    }
+
+    // ZIP Package Export - Generates individual PDF for each tab + JSON data file into a ZIP archive
+    async function exportZipPackage() {
+      const zip = new JSZip();
+      const folder = zip.folder("Acquisition_Package_Files");
+
+      // 1. Add JSON data file
+      const form = document.getElementById('acquisitionForm');
+      const formData = new FormData(form);
+      const dataObj = {};
+      formData.forEach((value, key) => { dataObj[key] = value; });
+      folder.file("package_data.json", JSON.stringify(dataObj, null, 2));
+
+      // 2. Generate individual PDF for each tab
+      const stage = document.getElementById('pdfPrintStage');
+      
+      for (const tab of tabsList) {
+        stage.innerHTML = generateTabHTML(tab.id);
+        const element = stage.children[0];
+        
+        const opt = {
+          margin:       [0.5, 0.5, 0.5, 0.5],
+          image:        { type: 'jpeg', quality: 0.98 },
+          html2canvas:  { scale: 2 },
+          jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+        };
+
+        const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
+        const fileName = `${tab.label.replace(/[^a-z0-9]/gi, '_')}.pdf`;
+        folder.file(fileName, pdfBlob);
+        stage.innerHTML = '';
+      }
+
+      // 3. Save ZIP archive
+      const zipBlob = await zip.generateAsync({ type: "blob" });
+      saveAs(zipBlob, `Acquisition_Bundle_${getTimestamp()}.zip`);
+    }
+
+    // Utility Functions
+    function getTimestamp() {
+      const now = new Date();
+      return now.toISOString().slice(0, 10);
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+</html>
